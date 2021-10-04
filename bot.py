@@ -1,9 +1,7 @@
-import os, requests, tweepy
+import os, tweepy
 
 from datetime import date, timedelta
 
-
-INTERVAL = 60 * 60 * 24
 
 CONSUMER_KEY=os.environ['CONSUMER_KEY']
 CONSUMER_SECRET=os.environ['CONSUMER_SECRET']
