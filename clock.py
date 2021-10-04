@@ -4,11 +4,11 @@ from bot import tweet_next_comic
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=2)
+@sched.scheduled_job('interval', minutes=1)
 def scheduled_job():
     tweet_next_comic()
 
-@sched.scheduled_job('cron', day_of_week='mon-sun', hour=10)
+@sched.scheduled_job('cron', day_of_week='mon-sun', hour=16)
 def scheduled_job():
     tweet_next_comic()
 

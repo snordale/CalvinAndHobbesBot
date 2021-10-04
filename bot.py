@@ -35,13 +35,12 @@ def tweet_next_comic():
 
     new_day = new_date.strftime('%d')
     new_filename = f'{new_date.year}{new_date.month}{new_day}.gif'
-    url = 'https://raw.githubusercontent.com/snordale/CalvinTwitterBot/master/comics/1995/01/19950101.gif?token=AFPGVQOMWX6CT4VI76VBJZLBMSNR4'
     
     filename = f'comics/{new_date.year}/{new_date.month}/{new_filename}'
 
-    media = api.media_upload(filename=file, chunked=True)
+    media = api.media_upload(filename=filename, chunked=True)
     text = f'{new_date.month}/{new_day}/{new_date.year}'
-    
+
     api.update_status(status=text, media_ids=[media.media_id])
 
     set_prev_comic(f'{new_date.year}{new_date.month}{new_day}')
