@@ -1,6 +1,8 @@
 import os, tweepy
 
-from datetime import date, timedelta
+from datetime import datetime
+
+from comic_dict import comic_dict
 
 
 CONSUMER_KEY=os.environ['CONSUMER_KEY']
@@ -12,33 +14,25 @@ auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
 api = tweepy.API(auth)
 
-def get_prev_comic():
-    with open('prev_comic.txt', 'r') as file:
-        return file.read(8)
+first_day = datetime(2021, 10, 6)
 
-def set_prev_comic(filename):
-    with open('prev_comic.txt', 'r+') as file:
-        return file.write(filename)
+
+def get_comic_index():
+    return (datetime.now() - first_day).days
 
 def tweet_next_comic():
-    prev_comic = get_prev_comic()
+    comic_index = get_comic_index()
+    filename = comic_dict[comic_index]
 
-    if prev_comic:
-        year = int(prev_comic[0:4])
-        month = int(prev_comic[4:6])
-        day = int(prev_comic[6:8])
-        new_date = date(year=year, month=month, day=day) + timedelta(days=1)
-    else:
-        new_date = date(year=1985, month=11, day=18)
+    print(f"Comic {comic_index}: {filename}")
 
-    new_day = new_date.strftime('%d')
-    new_filename = f'{new_date.year}{new_date.month}{new_day}.gif'
+    year = int(filename[0:4])
+    month = int(filename[4:6])
+    day = int(filename[6:8])
     
-    filename = f'comics/{new_date.year}/{new_date.month}/{new_filename}'
+    full_path = f'comics/{year}/{month}/{filename}'
 
-    media = api.media_upload(filename=filename, chunked=True)
-    text = f'{new_date.month}/{new_day}/{new_date.year}'
+    media = api.media_upload(filename=full_path, chunked=True)
+    text = f'{month}/{day}/{year}'
 
     api.update_status(status=text, media_ids=[media.media_id])
-
-    set_prev_comic(f'{new_date.year}{new_date.month}{new_day}')
