@@ -1,5 +1,5 @@
 # CalvinAndHobbesBot
-Tweets one Calvin and Hobbes comic per day in order of their release.
+Tweets one Calvin and Hobbes comic per day in order of their release.  
 https://twitter.com/CalvinB0t
 
 
