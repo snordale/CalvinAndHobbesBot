@@ -25,14 +25,14 @@ def tweet_next_comic():
     filename = comic_dict[comic_index]
 
     print(f"Comic {comic_index}: {filename}")
+	
+    year = filename[0:4]
+    month = filename[4:6]
+    day = filename[6:8]
 
-    year = int(filename[0:4])
-    month = int(filename[4:6])
-    day = int(filename[6:8])
-    
     full_path = f'comics/{year}/{month}/{filename}'
 
     media = api.media_upload(filename=full_path, chunked=True)
-    text = f'{month}/{day}/{year}'
+    text = f'{int(month)}/{int(day)}/{int(year)}'
 
     api.update_status(status=text, media_ids=[media.media_id])
