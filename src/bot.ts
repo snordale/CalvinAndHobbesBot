@@ -1,37 +1,53 @@
 import { addDays } from 'date-fns';
 import { config } from 'dotenv';
 import path from 'path';
-import { TwitterApi } from 'twitter-api-v2';
 config();
 
-const USERNAME = 'CalvinB0t'
+interface Tweet {
+    text: string;
+    created_at: string;
+}
 
-// Twitter API credentials
-const consumerKey = process.env.CONSUMER_KEY!;
-const consumerSecret = process.env.CONSUMER_SECRET!;
-const accessToken = process.env.ACCESS_KEY!;
-const accessSecret = process.env.ACCESS_SECRET!;
+interface TwitterResponse<T> {
+    data: T[];
+}
 
-// Initialize Twitter client
-const twitterClient = new TwitterApi({
-    appKey: consumerKey,
-    appSecret: consumerSecret,
-    accessToken: accessToken,
-    accessSecret: accessSecret,
-});
+interface UserResponse {
+    data: {
+        id: string;
+    };
+}
+
+interface MediaResponse {
+    media_id_string: string;
+}
+
+const USERNAME = 'CalvinB0t';
+const USER_ID = '1180913705711816704';
+const API_BASE_URL = 'https://api.twitter.com/2';
+
+// Headers for authenticated requests
+const headers = {
+    'Authorization': `Bearer ${process.env.TWITTER_BEARER_TOKEN}`,
+    'Content-Type': 'application/json'
+};
 
 const FIRST_TWEET_DATE = new Date(2021, 9, 6);
 
 async function getLastTweetDate(): Promise<Date> {
     try {
-        const tweets = await twitterClient.v2.userTimeline(process.env.BOT_USER_ID!, {
-            max_results: 5,
-            "tweet.fields": ["created_at"],
+        const response = await fetch(`${API_BASE_URL}/users/${USER_ID}/tweets?max_results=10&tweet.fields=text,created_at`, {
+            headers
         });
 
-        console.log('tweets', tweets)
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        for (const tweet of tweets.data.data) {
+        const data = await response.json() as TwitterResponse<Tweet>;
+        const tweets = data.data;
+
+        for (const tweet of tweets) {
             // Try to parse date from tweet text (format: M/D/YYYY)
             const match = tweet.text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
             if (match) {
@@ -43,19 +59,54 @@ async function getLastTweetDate(): Promise<Date> {
         console.error('Error getting last tweet date:', error);
     }
 
-
     throw new Error('Error getting last tweet date');
 }
 
 export const followUsers = async (): Promise<void> => {
     try {
-        const targetUser = 'Calvinn_Hobbes';
-        const followers = await twitterClient.v2.followers(targetUser);
+        // First get the target user's ID
+        const userResponse = await fetch(`${API_BASE_URL}/users/by/username/Calvinn_Hobbes`, {
+            headers
+        });
+        
+        if (!userResponse.ok) {
+            throw new Error(`HTTP error! status: ${userResponse.status}`);
+        }
 
-        for (const follower of followers.data.slice(50, 60)) {
+        const userData = await userResponse.json() as UserResponse;
+        const targetUserId = userData.data.id;
+
+        // Get followers
+        const followersResponse = await fetch(`${API_BASE_URL}/users/${targetUserId}/followers`, {
+            headers
+        });
+
+        if (!followersResponse.ok) {
+            throw new Error(`HTTP error! status: ${followersResponse.status}`);
+        }
+
+        const followersData = await followersResponse.json() as TwitterResponse<{ id: string; username: string }>;
+        const followers = followersData.data.slice(50, 60);
+
+        // Follow each user
+        for (const follower of followers) {
             try {
-                await twitterClient.v1.createFriendship({ user_id: follower.id });
-                console.log(`Followed user: ${follower.username}`);
+                const followResponse = await fetch(`${API_BASE_URL}/users/${USER_ID}/following`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.TWITTER_OAUTH2_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        target_user_id: follower.id
+                    })
+                });
+
+                if (followResponse.ok) {
+                    console.log(`Followed user: ${follower.username}`);
+                } else {
+                    console.error(`Failed to follow user ${follower.username}`);
+                }
             } catch (error) {
                 console.error(`Unable to follow user ${follower.username}:`, error);
             }
@@ -77,14 +128,41 @@ export const tweetNextComic = async (): Promise<void> => {
         const filename = `${year}${month}${day}.gif`;
 
         // Upload media
-        const mediaId = await twitterClient.v1.uploadMedia(filename);
+        const formData = new FormData();
+        formData.append('media', await fetch(filename).then(r => r.blob()));
+        
+        const mediaResponse = await fetch('https://upload.twitter.com/1.1/media/upload.json', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.TWITTER_OAUTH2_TOKEN}`
+            },
+            body: formData
+        });
+
+        if (!mediaResponse.ok) {
+            throw new Error(`Failed to upload media: ${mediaResponse.status}`);
+        }
+
+        const mediaData = await mediaResponse.json() as MediaResponse;
+        const mediaId = mediaData.media_id_string;
 
         // Create tweet
         const text = `${month}/${day}/${year}`;
-        await twitterClient.v2.tweet({
-            text,
-            media: { media_ids: [mediaId] }
+        const tweetResponse = await fetch(`${API_BASE_URL}/tweets`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.TWITTER_OAUTH2_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text,
+                media: { media_ids: [mediaId] }
+            })
         });
+
+        if (!tweetResponse.ok) {
+            throw new Error(`Failed to create tweet: ${tweetResponse.status}`);
+        }
 
         console.log('Successfully tweeted comic:', text);
     } catch (error) {
