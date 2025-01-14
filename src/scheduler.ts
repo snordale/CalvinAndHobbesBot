@@ -1,8 +1,8 @@
-import { CronJob } from 'cron';
-import { followUsers } from './followUsers';
-import { tweetNextComic } from './tweetNextComic';
 import { config } from 'dotenv';
 config();
+
+import { CronJob } from 'cron';
+import { tweetNextComic } from './tweetNextComic';
 
 // Tweet comic every day at 9:00 AM
 new CronJob('0 9 * * *', async () => {
@@ -16,4 +16,4 @@ new CronJob('0 9 * * *', async () => {
 //   await followUsers();
 // }, null, true, 'America/Los_Angeles');
 
-console.log('Scheduler started!'); 
+console.log('Scheduler started.'); 
