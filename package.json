@@ -6,8 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/scheduler.js",
-    "dev": "ts-node src/scheduler.ts",
-    "watch": "tsc -w"
+    "dev": "ts-node src/scheduler.  ts",
+    "watch": "tsc -w",
+    "test-follow": "ts-node src/tests/testFollow.ts",
+    "test-tweet": "ts-node src/tests/testTweet.ts"
   },
   "keywords": [],
   "author": "",
