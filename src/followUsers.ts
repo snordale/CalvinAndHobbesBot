@@ -1,39 +1,35 @@
-import TwitterApi from "twitter-api-v2";
 import { USER_ID } from "./constants";
-
-const creds = {
-    appKey: process.env.X_API_KEY || '',
-    appSecret: process.env.X_API_SECRET || '',
-    accessToken: process.env.X_ACCESS_TOKEN || '',
-    accessSecret: process.env.X_ACCESS_SECRET || '',
-}
-
-const client = new TwitterApi(creds);
+import { xClient } from "./xClient";
 
 export const followUsers = async (): Promise<void> => {
     try {
         console.log('Starting followUsers');
+
         // First get the target user's ID
-        const userData = await client.v2.userByUsername('Calvinn_Hobbes');
+        const userData = await xClient.v2.userByUsername('Calvinn_Hobbes');
+
+        console.log(`Got user: `, userData.data);
+
         const targetUserId = userData.data.id;
-        console.log(`Target user ID: ${targetUserId}`);
 
         // Get followers
-        const followersData = await client.v2.followers(targetUserId, {
-            max_results: 1000
+        const followersData = await xClient.v1.userFollowerIds({
+            user_id: targetUserId,
+            cursor: '50',
+            'count': 10
         });
-        console.log(`Followers data: ${followersData}`);
+        console.log(`Followers data: ${followersData.data}`);
+
+        const followerIds = followersData.data.ids;
 
         // Take followers 50-60
-        const followers = followersData.data.slice(50, 60);
-        console.log(`Followers: ${followers}`);
+        console.log(`followerIds: ${followerIds}`);
         // Follow each user
-        for (const follower of followers) {
+        for (const id of followerIds) {
             try {
-                await client.v2.follow(USER_ID, follower.id);
-                console.log(`Followed user: ${follower.username}`);
+                await xClient.v2.follow(USER_ID, id);
             } catch (error) {
-                console.error(`Unable to follow user ${follower.username}:`, error);
+                console.error(`Unable to follow user ${id}:`, error);
             }
         }
     } catch (error) {

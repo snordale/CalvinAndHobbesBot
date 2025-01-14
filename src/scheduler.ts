@@ -11,9 +11,9 @@ new CronJob('0 9 * * *', async () => {
 }, null, true, 'America/Los_Angeles');
 
 // Follow users every day at 9:15 AM
-new CronJob('15 9 * * *', async () => {
-  console.log('Following users...');
-  await followUsers();
-}, null, true, 'America/Los_Angeles');
+// new CronJob('15 9 * * *', async () => {
+//   console.log('Following users...');
+//   await followUsers();
+// }, null, true, 'America/Los_Angeles');
 
 console.log('Scheduler started!'); 
