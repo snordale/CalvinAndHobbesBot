@@ -1,8 +1,7 @@
 import { addDays } from 'date-fns';
-import fs from 'fs';
+import dotenv from 'dotenv';
 import path from 'path';
 import { TwitterApi } from 'twitter-api-v2';
-import dotenv from 'dotenv';
 import { USER_ID } from './constants';
 
 dotenv.config();
@@ -20,8 +19,6 @@ const creds = {
     accessSecret: process.env.X_ACCESS_SECRET || '',
 }
 
-console.log(creds);
-
 const client = new TwitterApi(creds);
 
 /**
@@ -37,16 +34,18 @@ export async function tweetNextComic(): Promise<void> {
             max_results: 5,
             "tweet.fields": ["created_at"],
         });
-        console.log('tweets: ', tweets);
-        const lastTweetDate = new Date(tweets.data[0].created_at!);
+        console.log('tweet: ', tweets.data.data[0]);
+        const lastTweetText = tweets.data.data[0].text;
+        const lastComicDateString = lastTweetText?.split(' ')[0];
+        const lastComicDate = new Date(lastComicDateString);
 
-        // The "next tweet date" is lastTweetDate + 1 day:
-        const nextTweetDate = addDays(lastTweetDate, 1);
+        // The "next comic date" is lastComicDate + 1 day:
+        const nextComicDate = addDays(lastComicDate, 1);
 
         // Format the date (YYYYMMDD) to match your filename.
-        const year = nextTweetDate.getFullYear().toString();
-        const month = String(nextTweetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(nextTweetDate.getDate()).padStart(2, '0');
+        const year = nextComicDate.getFullYear().toString();
+        const month = String(nextComicDate.getMonth() + 1).padStart(2, '0');
+        const day = String(nextComicDate.getDate()).padStart(2, '0');
 
         // Construct the filename, e.g. "19851119.gif"
         const filename = `${year}${month}${day}.gif`;
