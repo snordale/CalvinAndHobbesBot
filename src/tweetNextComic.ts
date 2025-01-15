@@ -39,7 +39,7 @@ export async function tweetNextComic(): Promise<void> {
         const mediaId = await xClient.v1.uploadMedia(filePath, { mimeType: 'image/png' });
 
         // 4) Tweet with the uploaded media
-        const tweetText = `${month}/${day}/${year}`; // E.g. "11/19/1985"
+        const tweetText = `${parseInt(month)}/${parseInt(day)}/${year}`; // E.g. "1/19/1986"
 
         // Using v2 tweet
         const { data: createdTweet } = await xClient.v2.tweet({
