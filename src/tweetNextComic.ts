@@ -2,52 +2,52 @@ import { addDays } from 'date-fns';
 import path from 'path';
 import { USER_ID } from './constants';
 import { xClient } from './xClient';
+import { getLastComicDate, updateLastComicDate } from './db';
 
 /**
- * 2) The main function that calculates the date, reads the comic file,
- *    uploads the media, and tweets with that media attached.
+ * The main function that calculates the date, reads the comic file,
+ * uploads the media, and tweets with that media attached.
  */
 export async function tweetNextComic(): Promise<void> {
     try {
-        // Get the last tweet date from the user's timeline
-        const tweets = await xClient.v2.userTimeline(USER_ID, {
-            max_results: 5,
-            "tweet.fields": ["created_at"],
-        });
-
-        const lastTweetText = tweets.data.data[0].text;
-        const lastComicDateString = lastTweetText?.split(' ')[0];
-        const lastComicDate = new Date(lastComicDateString);
+        // Get the last comic date from our database
+        const lastComicDateString = await getLastComicDate();
+        const [lastMonth, lastDay, lastYear] = lastComicDateString.split('/');
+        const lastComicDate = new Date(parseInt(lastYear), parseInt(lastMonth) - 1, parseInt(lastDay));
 
         // The "next comic date" is lastComicDate + 1 day:
         const nextComicDate = addDays(lastComicDate, 1);
 
-        // Format the date (YYYYMMDD) to match your filename.
-        const year = nextComicDate.getFullYear().toString();
-        const month = String(nextComicDate.getMonth() + 1).padStart(2, '0');
-        const day = String(nextComicDate.getDate()).padStart(2, '0');
+        // Format the date (YYYYMMDD) to match your filename
+        const formattedYear = nextComicDate.getFullYear().toString();
+        const formattedMonth = String(nextComicDate.getMonth() + 1).padStart(2, '0');
+        const formattedDay = String(nextComicDate.getDate()).padStart(2, '0');
 
         // Construct the filename, e.g. "19851119.gif"
-        const filename = `${year}${month}${day}.gif`;
+        const filename = `${formattedYear}${formattedMonth}${formattedDay}.gif`;
 
-        // Build the full path to your file: "../comics/YYYY/MM/YYYYMMDD.gif"
-        // Adjust this path structure as needed for your project
-        const filePath = path.join('comics', year, month, filename);
+        // Build the full path to your file
+        const filePath = path.join('comics', formattedYear, formattedMonth, filename);
 
-        // 3) Upload the media
-        // twitter-api-v2 v1 upload
+        // Upload the media
         const mediaId = await xClient.v1.uploadMedia(filePath, { mimeType: 'image/png' });
 
-        // 4) Tweet with the uploaded media
-        const tweetText = `${parseInt(month)}/${parseInt(day)}/${year}`; // E.g. "1/19/1986"
+        // Tweet with the uploaded media
+        const tweetText = `${parseInt(formattedMonth)}/${parseInt(formattedDay)}/${formattedYear}`; // E.g. "1/19/1986"
 
-        // Using v2 tweet
-        const { data: createdTweet } = await xClient.v2.tweet({
-            text: tweetText,
-            media: { media_ids: [mediaId] },
-        });
+        try {
+            const { data: createdTweet } = await xClient.v2.tweet({
+                text: tweetText,
+                media: { media_ids: [mediaId] },
+            });
+            console.log('Successfully created tweet with ID:', createdTweet.id);
+            
+            // Update the database with the new date after successful tweet
+            await updateLastComicDate(tweetText);
+        } catch (error) {
+            console.error('Error in tweetNextComic:', error);
+        }
 
-        console.log('Successfully created tweet with ID:', createdTweet.id);
     } catch (error) {
         console.error('Error in tweetNextComic:', error);
     }
