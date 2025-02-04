@@ -41,7 +41,7 @@ export async function tweetNextComic(): Promise<void> {
                 media: { media_ids: [mediaId] },
             });
             
-            console.log(`Posted comic for ${tweetText}: https://twitter.com/user/status/${createdTweet.id}`);
+            console.log(`Posted comic for ${tweetText}: https://x.com/user/status/${createdTweet.id}`);
             await updateLastComicDate(tweetText);
         } catch (error) {
             console.error('Failed to post tweet:', error instanceof Error ? error.message : String(error));
