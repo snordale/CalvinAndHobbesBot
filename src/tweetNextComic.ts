@@ -14,7 +14,7 @@ export async function tweetNextComic(): Promise<void> {
         const lastComicDateString = await getLastComicDate();
         const [lastMonth, lastDay, lastYear] = lastComicDateString.split('/');
         const lastComicDate = new Date(parseInt(lastYear), parseInt(lastMonth) - 1, parseInt(lastDay));
-
+        
         // The "next comic date" is lastComicDate + 1 day:
         const nextComicDate = addDays(lastComicDate, 1);
 
@@ -25,7 +25,7 @@ export async function tweetNextComic(): Promise<void> {
 
         // Construct the filename, e.g. "19851119.gif"
         const filename = `${formattedYear}${formattedMonth}${formattedDay}.gif`;
-
+        
         // Build the full path to your file
         const filePath = path.join('comics', formattedYear, formattedMonth, filename);
 
@@ -40,15 +40,16 @@ export async function tweetNextComic(): Promise<void> {
                 text: tweetText,
                 media: { media_ids: [mediaId] },
             });
-            console.log('Successfully created tweet with ID:', createdTweet.id);
             
-            // Update the database with the new date after successful tweet
+            console.log(`Posted comic for ${tweetText}: https://twitter.com/user/status/${createdTweet.id}`);
             await updateLastComicDate(tweetText);
         } catch (error) {
-            console.error('Error in tweetNextComic:', error);
+            console.error('Failed to post tweet:', error instanceof Error ? error.message : String(error));
+            throw error;
         }
 
     } catch (error) {
-        console.error('Error in tweetNextComic:', error);
+        console.error('Error in tweetNextComic:', error instanceof Error ? error.message : String(error));
+        throw error;
     }
 }
